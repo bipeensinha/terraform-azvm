@@ -1,0 +1,70 @@
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  tf_state_rg: "az800" # name of the resource group to create/use for the terraform state file
+  tf_state_location: "east us" # location of the resource group to create/use for the terraform state file
+  tf_state_sa_name: "tfdemo19752004" # name of of the storage account to create/use for the terraform state file
+  tf_state_container_name: "tfstate" # name of of the container to create/use for the terraform state file
+  tf_state_tags: "env=blogpost-terraform-devops-pipeline deployedBy=devops" # tags for the resources above which support tagging
+  tf_environment: "dev" # environment name, used for the statefile name
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.x'
+    addToPath: true
+
+- script: |
+    echo "##vso[task.prependpath]/usr/local/bin"
+  displayName: 'Add /usr/local/bin to PATH'
+
+- task: AzureCLI@2
+  displayName: "Create/Check the Terraform Statefile Azure Storage Account"
+  inputs:
+    backendServiceArm: ""
+    azureSubscription: "Azuretfsvc1"
+    addSpnToEnvironment: true
+    scriptType: "bash"
+    scriptLocation: "inlineScript"
+    inlineScript: |
+      TAGS=$(echo $tf_state_tags | tr " " ",")
+      az group create --name $(tf_state_rg) --location $(tf_state_location) --tags "${TAGS}"
+      ACCOUNT_KEY=$(az storage account keys list --resource-group $(tf_state_rg) --account-name $(tf_state_sa_name) --query [0].value -o tsv)
+      az storage container create --name $(tf_state_container_name) --account-name $(tf_state_sa_name) --account-key $ACCOUNT_KEY
+      echo "##vso[task.setvariable variable=tf_state_sa_key]$ACCOUNT_KEY"
+
+- task: TerraformTaskV1@0
+  displayName: "Run > terraform init"
+  inputs:
+    command: "init"
+    backendServiceArm: "Azuretfsvc1"
+    backendAzureRmResourceGroupName: "$(tf_state_rg)"
+    backendAzureRmStorageAccountName: "$(tf_state_sa_name)"
+    backendAzureRmContainerName: "$(tf_state_container_name)"
+    backendAzureRmKey: "$(tf_environment).terraform.tfstate"
+
+- task: TerraformTaskV1@0
+  displayName: "Run > terraform plan"
+  inputs:
+    command: "plan"
+    environmentServiceNameAzureRM: "Azuretfsvc1"
+
+- task: TerraformTaskV1@0
+  displayName: "Run > terraform apply"
+  inputs:
+    command: "apply"
+    environmentServiceNameAzureRM: "Azuretfsvc1"
+
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: "Azuretfsvc1"
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az storage blob upload --container-name $(tf_state_container_name) --account-name $(tf_state_sa_name) --name terraform.tfstate --file terraform.tfstate
+      rm -rf ~/.azure/credentials*
+  displayName: 'Upload Blob and Cleanup'
