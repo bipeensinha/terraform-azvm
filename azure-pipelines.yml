@@ -25,7 +25,6 @@ steps:
 - task: AzureCLI@2
   displayName: "Create/Check the Terraform Statefile Azure Storage Account"
   inputs:
-   
     backendServiceArm: ""
     azureSubscription: "Azuretfsvc1"
     addSpnToEnvironment: true
@@ -54,13 +53,11 @@ steps:
   displayName: "Run > terraform plan"
   inputs:
     command: "plan"
-    environmentServiceNameAzureRM: "Azuretfsvc1"
 
 - task: TerraformTaskV1@0
   displayName: "Run > terraform apply"
   inputs:
     command: "apply"
-    environmentServiceNameAzureRM: "Azuretfsvc1"
 
 - task: AzureCLI@2
   inputs:
