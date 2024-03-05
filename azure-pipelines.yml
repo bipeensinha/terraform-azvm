@@ -19,7 +19,12 @@ steps:
     addToPath: true
 
 - script: |
-    az login --service-principal -u $(client_id) -p $(client_secret) --tenant $(tenant_id)
+    # Authenticate to Azure
+     
+      az login --service-principal -u 0b381472-3197-49d4-a324-f1a96a23c8a7 -p t8P8Q~Yb4L8Dn~oj9t5GPzFOROUqJM4VJXTTBbLH --tenant be04fbd5-6b00-412c-a86c-ca105b5cce90
+      
+      # Select Azure subscription
+      az account set --subscription 49c56ee8-d443-4854-a62c-3a0aae84ac6f
   displayName: 'Azure Login'
 
 - script: |
