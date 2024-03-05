@@ -6,7 +6,7 @@ pool:
 
 variables:
   tf_state_rg: "az800" # name of the resource group to create/use for the terraform state file
-  tf_state_location: "east us" # location of the resource group to create/use for the terraform state file
+  tf_state_location: "eastus" # location of the resource group to create/use for the terraform state file
   tf_state_sa_name: "tfdemo19752004" # name of of the storage account to create/use for the terraform state file
   tf_state_container_name: "tfstate" # name of of the container to create/use for the terraform state file
   tf_state_tags: "env=blogpost-terraform-devops-pipeline deployedBy=devops" # tags for the resources above which support tagging
@@ -25,6 +25,7 @@ steps:
 - task: AzureCLI@2
   displayName: "Create/Check the Terraform Statefile Azure Storage Account"
   inputs:
+   
     backendServiceArm: ""
     azureSubscription: "Azuretfsvc1"
     addSpnToEnvironment: true
@@ -41,6 +42,8 @@ steps:
   displayName: "Run > terraform init"
   inputs:
     command: "init"
+    backendType: 'azurerm'
+    ensureBackend: true
     backendServiceArm: "Azuretfsvc1"
     backendAzureRmResourceGroupName: "$(tf_state_rg)"
     backendAzureRmStorageAccountName: "$(tf_state_sa_name)"
